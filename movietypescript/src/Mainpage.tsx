@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Movies from "./Movies";
 
 interface Movie {
@@ -24,6 +24,9 @@ const Mainpage: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [hasNextPage, setHasNextPage] = useState<boolean>(false);
     const [pageParams, setPageParams] = useState<number[]>([]); // 호출한 페이지 저장할 용도
+
+    // useRef 타입 명시 (HTMLHeadingElement | null)
+    const observerRef = useRef<HTMLHeadingElement | null>(null);
 
     const fetchTopRatedMovies = async (page: number) => {
         if (pageParams.includes(page)) return; // 중복호출 방지
@@ -58,9 +61,32 @@ const Mainpage: React.FC = () => {
         fetchTopRatedMovies(page);
     }, [page]);
 
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            const firstEntry = entries[0];
+            if (firstEntry.isIntersecting) {
+                console.log("화면에 보인다~~");
+                if (hasNextPage && !loading) {
+                    setPage((prevPage) => prevPage + 1);
+                }
+            }
+        });
+
+        if (observerRef.current) {
+            observer.observe(observerRef.current);
+        }
+
+        return () => {
+            if (observerRef.current) {
+                observer.unobserve(observerRef.current);
+            }
+        };
+    }, [hasNextPage, loading]);
+
     return (
         <div>
             <Movies movies={movies} loading={loading} />
+            <h1 ref={observerRef}>loadmore</h1>
         </div>
     );
 };
